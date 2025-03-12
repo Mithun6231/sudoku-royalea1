@@ -1,0 +1,162 @@
+// Starting puzzle (null represents empty cells)
+const initialGrid = [
+  [5, 3, null, null, 7, null, null, null, null],
+  [6, null, null, 1, 9, 5, null, null, null],
+  [null, 9, 8, null, null, null, null, 6, null],
+  [8, null, null, null, 6, null, null, null, 3],
+  [4, null, null, 8, null, 3, null, null, 1],
+  [7, null, null, null, 2, null, null, null, 6],
+  [null, 6, null, null, null, null, 2, 8, null],
+  [null, null, null, 4, 1, 9, null, null, 5],
+  [null, null, null, null, 8, null, null, 7, 9]
+];
+
+// Copy the initial grid to track changes
+const grid = JSON.parse(JSON.stringify(initialGrid));
+
+let currentPlayer = 1; // Start with Player 1
+let player1Score = 0;
+let player2Score = 0;
+
+// Create the grid on the page
+function renderGrid() {
+  const gridDiv = document.getElementById('grid');
+  gridDiv.innerHTML = ''; // Clear existing grid
+  for (let row = 0; row < 9; row++) {
+    for (let col = 0; col < 9; col++) {
+      const cell = document.createElement('div');
+      cell.classList.add('cell');
+      if (initialGrid[row][col] !== null) {
+        cell.classList.add('pre-filled');
+        cell.textContent = initialGrid[row][col];
+      }
+      cell.dataset.row = row;
+      cell.dataset.col = col;
+      cell.addEventListener('click', handleCellClick);
+      gridDiv.appendChild(cell);
+    }
+  }
+}
+
+// When a cell is clicked
+function handleCellClick() {
+  if (this.textContent === '') { // Only select empty cells
+    document.querySelectorAll('.cell').forEach(cell => cell.classList.remove('selected'));
+    this.classList.add('selected');
+  }
+}
+
+// Create number buttons (1-9)
+function renderNumberPad() {
+  const numberPad = document.getElementById('number-pad');
+  for (let i = 1; i <= 9; i++) {
+    const button = document.createElement('button');
+    button.textContent = i;
+    button.addEventListener('click', handleNumberClick);
+    numberPad.appendChild(button);
+  }
+}
+
+// When a number button is clicked
+function handleNumberClick() {
+  const selectedCell = document.querySelector('.cell.selected');
+  if (!selectedCell) {
+    alert('Please select a cell first.');
+    return;
+  }
+  const row = parseInt(selectedCell.dataset.row);
+  const col = parseInt(selectedCell.dataset.col);
+  const num = parseInt(this.textContent);
+
+  if (isValidMove(grid, row, col, num)) {
+    grid[row][col] = num;
+    selectedCell.textContent = num;
+    selectedCell.classList.remove('selected');
+
+    // Award points for completions
+    let points = 0;
+    if (isRowComplete(grid, row)) points += 1;
+    if (isColumnComplete(grid, col)) points += 1;
+    if (isBoxComplete(grid, row, col)) points += 2;
+
+    if (currentPlayer === 1) {
+      player1Score += points;
+      document.getElementById('player1-score').textContent = player1Score;
+    } else {
+      player2Score += points;
+      document.getElementById('player2-score').textContent = player2Score;
+    }
+
+    // Switch player
+    currentPlayer = currentPlayer === 1 ? 2 : 1;
+    document.getElementById('current-player').textContent = currentPlayer;
+
+    // Check if the game is over
+    if (isGridFull(grid)) {
+      let winner = player1Score > player2Score ? 'Player 1' : 
+                  player2Score > player1Score ? 'Player 2' : 'It\'s a tie';
+      document.getElementById('game-over').textContent = `Game Over! ${winner} wins!`;
+      document.getElementById('game-over').style.display = 'block';
+    }
+  } else {
+    alert('Invalid move!');
+  }
+}
+
+// Check if a move is valid (Sudoku rules)
+function isValidMove(grid, row, col, num) {
+  // Check row
+  if (grid[row].includes(num)) return false;
+  // Check column
+  for (let r = 0; r < 9; r++) {
+    if (grid[r][col] === num) return false;
+  }
+  // Check 3x3 box
+  const boxRow = Math.floor(row / 3) * 3;
+  const boxCol = Math.floor(col / 3) * 3;
+  for (let r = boxRow; r < boxRow + 3; r++) {
+    for (let c = boxCol; c < boxCol + 3; c++) {
+      if (grid[r][c] === num) return false;
+    }
+  }
+  return true;
+}
+
+// Check if a row is fully filled
+function isRowComplete(grid, row) {
+  return grid[row].every(cell => cell !== null);
+}
+
+// Check if a column is fully filled
+function isColumnComplete(grid, col) {
+  for (let r = 0; r < 9; r++) {
+    if (grid[r][col] === null) return false;
+  }
+  return true;
+}
+
+// Check if a 3x3 box is fully filled
+function isBoxComplete(grid, row, col) {
+  const boxRow = Math.floor(row / 3) * 3;
+  const boxCol = Math.floor(col / 3) * 3;
+  for (let r = boxRow; r < boxRow + 3; r++) {
+    for (let c = boxCol; c < boxCol + 3; c++) {
+      if (grid[r][c] === null) return false;
+    }
+  }
+  return true;
+}
+
+// Check if the entire grid is full
+function isGridFull(grid) {
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      if (grid[r][c] === null) return false;
+    }
+  }
+  return true;
+}
+
+// Start the game
+renderGrid();
+renderNumberPad();
